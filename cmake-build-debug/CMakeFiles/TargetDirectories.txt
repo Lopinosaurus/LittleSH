@@ -1,0 +1,3 @@
+/home/lopinosaurus/LittleSH/cmake-build-debug/CMakeFiles/LittleSH.dir
+/home/lopinosaurus/LittleSH/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/lopinosaurus/LittleSH/cmake-build-debug/CMakeFiles/rebuild_cache.dir

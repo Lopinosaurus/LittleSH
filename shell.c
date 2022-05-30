@@ -7,182 +7,192 @@
 #include<readline/readline.h>
 #include<readline/history.h>
 
-#define MAXCOM 1000 // max number of letters to be supported
-#define MAXLIST 100 // max number of commands to be supported
+// All already-built function are featured in GNU C Library, available in the Git repository.
 
-// Clearing the shell using escape sequences
+// Max char accepted
+#define MAXCOM 1000
+// Max cmds possibly entered
+#define MAXLIST 100
 #define clear() printf("\033[H\033[J")
 
-// Greeting shell during startup
-void init_shell()
+// Kind of neofetch when launching the shell
+void shell_fetch()
 {
     clear();
-    printf("\n\n\n\n******************"
-        "************************");
-    printf("\n\n\n\t****MY SHELL****");
-    printf("\n\n\t-USE AT YOUR OWN RISK-");
-    printf("\n\n\n\n*******************"
-        "***********************");
+    printf("\n\n\n\n=================""========================");
+    printf("\n\n\n\t----WELCOME TO LITTLESHELL----");
+    printf("\n\n\t-WORK IN PROGRESS, VERSION 1.0-");
+    printf("\n\n\n\n===================""=======================");
     char* username = getenv("USER");
-    printf("\n\n\nUSER is: @%s", username);
+    printf("\n\n\nWelcome, @%s", username);
     printf("\n");
     sleep(1);
     clear();
 }
 
-// Function to take input
-int takeInput(char* str)
-{
-    char* buf;
 
-    buf = readline("\n>>> ");
-    if (strlen(buf) != 0) {
-        add_history(buf);
-        strcpy(str, buf);
+// Display help menu
+void help_menu()
+{
+    printf("\nDisplaying help menu: "
+           "\nLittle Shell 1.0:"
+           "\ncd : jump into directory"
+           "\nls : display files and directories"
+           "\nexit : leave the shell"
+           "\n>pipe handling");
+
+    return;
+}
+
+
+// Read input entered by user
+int input_dump(char* str)
+{
+    char* arg;
+
+    arg = readline("\n>>> ");
+    if (strlen(arg) != 0)
+    {
+        // both are featured in history.h
+        add_history(arg);
+        strcpy(str, arg);
         return 0;
-    } else {
+    }
+    else
+    {
         return 1;
     }
 }
 
-// Function to print Current Directory.
-void printDir()
+// cwd: Current dir
+void get_cwd()
 {
     char cwd[1024];
+    // featured in unistd.h
     getcwd(cwd, sizeof(cwd));
-    printf("\nDir: %s", cwd);
+    // featured in stdio.h
+    printf(cwd);
 }
 
 // Function where the system command is executed
-void execArgs(char** parsed)
+void exec_cmd(char** parsed)
 {
-    // Forking a child
+    // getting pid, type in types.h
     pid_t pid = fork();
 
-    if (pid == -1) {
-        printf("\nFailed forking child..");
+    if (pid == -1)
+    {
+        printf("\nError: child forking impossible... (PID is equal to -1)");
         return;
-    } else if (pid == 0) {
-        if (execvp(parsed[0], parsed) < 0) {
-            printf("\nCould not execute command..");
+    }
+    else if (pid == 0)
+    {
+        if (execvp(parsed[0], parsed) < 0)
+        {
+            printf("\nError : impossible command (PID equal to 0)");
         }
         exit(0);
-    } else {
-        // waiting for child to terminate
+    }
+    else
+    {
+        // featured in wait.h
         wait(NULL);
         return;
     }
 }
 
-// Function where the piped system commands is executed
-void execArgsPiped(char** parsed, char** parsedpipe)
+void exec_piped_arg(char** parsed, char** parsed_pipe)
 {
-    // 0 is read end, 1 is write end
     int pipefd[2];
-    pid_t p1, p2;
+    pid_t pid1, pid2;
 
-    if (pipe(pipefd) < 0) {
-        printf("\nPipe could not be initialized");
+    if (pipe(pipefd) < 0)
+    {
+        printf("\nError : cannot init pipe");
         return;
     }
-    p1 = fork();
-    if (p1 < 0) {
-        printf("\nCould not fork");
+    pid1 = fork();
+    if (pid1 < 0)
+    {
+        printf("\nError : could not fork child");
         return;
     }
 
-    if (p1 == 0) {
-        // Child 1 executing..
-        // It only needs to write at the write end
+    if (0 == pid1)
+    {
+        // fun featured in unistd.h
         close(pipefd[0]);
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);
 
-        if (execvp(parsed[0], parsed) < 0) {
-            printf("\nCould not execute command 1..");
+        if (execvp(parsed[0], parsed) < 0)
+        {
+            printf("\nError : invalid command");
             exit(0);
         }
-    } else {
-        // Parent executing
-        p2 = fork();
+    }
+    else
+    {
+        pid2 = fork();
 
-        if (p2 < 0) {
-            printf("\nCould not fork");
+        if (pid2 < 0)
+        {
+            printf("\nError : could not fork child");
             return;
         }
 
-        // Child 2 executing..
-        // It only needs to read at the read end
-        if (p2 == 0) {
+        if (0 == pid2)
+        {
+            // featured in unistd.h
             close(pipefd[1]);
             dup2(pipefd[0], STDIN_FILENO);
             close(pipefd[0]);
-            if (execvp(parsedpipe[0], parsedpipe) < 0) {
-                printf("\nCould not execute command 2..");
+            if (execvp(parsed_pipe[0], parsed_pipe) < 0)
+            {
+                printf("\nError : invalid command");
                 exit(0);
             }
-        } else {
-            // parent executing, waiting for two children
+        }
+        else
+        {
             wait(NULL);
             wait(NULL);
         }
     }
 }
 
-// Help command builtin
-void openHelp()
+// execute commands
+int cmd_executer(char** parsed_line)
 {
-    puts("\n***WELCOME TO MY SHELL HELP***"
-        "\nCopyright @ Suprotik Dey"
-        "\n-Use the shell at your own risk..."
-        "\nList of Commands supported:"
-        "\n>cd"
-        "\n>ls"
-        "\n>exit"
-        "\n>all other general commands available in UNIX shell"
-        "\n>pipe handling"
-        "\n>improper space handling");
+    int not_cmd = 4, i, sw_arg = 0;
+    char* cmd_list[not_cmd];
+    cmd_list[0] = "exit";
+    cmd_list[1] = "cd";
+    cmd_list[2] = "help";
 
-    return;
-}
-
-// Function to execute builtin commands
-int ownCmdHandler(char** parsed)
-{
-    int NoOfOwnCmds = 4, i, switchOwnArg = 0;
-    char* ListOfOwnCmds[NoOfOwnCmds];
-    char* username;
-
-    ListOfOwnCmds[0] = "exit";
-    ListOfOwnCmds[1] = "cd";
-    ListOfOwnCmds[2] = "help";
-    ListOfOwnCmds[3] = "hello";
-
-    for (i = 0; i < NoOfOwnCmds; i++) {
-        if (strcmp(parsed[0], ListOfOwnCmds[i]) == 0) {
-            switchOwnArg = i + 1;
+    for (i = 0; i < not_cmd; i++)
+    {
+        if (strcmp(parsed_line[0], cmd_list[i]) == 0)
+        {
+            sw_arg = i + 1;
             break;
         }
     }
 
-    switch (switchOwnArg) {
+    switch (sw_arg)
+    {
     case 1:
-        printf("\nGoodbye\n");
+        printf("\nQuiting LittleSH...\n");
         exit(0);
     case 2:
-        chdir(parsed[1]);
+        // featured in unistd.h, yeah I kinda cheat :)
+        chdir(parsed_line[1]);
         return 1;
     case 3:
-        openHelp();
-        return 1;
-    case 4:
-        username = getenv("USER");
-        printf("\nHello %s.\nMind that this is "
-            "not a place to play around."
-            "\nUse help to know more..\n",
-            username);
+        help_menu();
         return 1;
     default:
+        printf("\nError: command not found...\n");
         break;
     }
 
@@ -238,7 +248,7 @@ int processString(char* str, char** parsed, char** parsedpipe)
         parseSpace(str, parsed);
     }
 
-    if (ownCmdHandler(parsed))
+    if (cmd_executer(parsed))
         return 0;
     else
         return 1 + piped;
@@ -249,13 +259,13 @@ int main()
     char inputString[MAXCOM], *parsedArgs[MAXLIST];
     char* parsedArgsPiped[MAXLIST];
     int execFlag = 0;
-    init_shell();
+    shell_fetch();
 
     while (1) {
         // print shell line
-        printDir();
+        get_cwd();
         // take input
-        if (takeInput(inputString))
+        if (input_dump(inputString))
             continue;
         // process
         execFlag = processString(inputString,
@@ -267,10 +277,10 @@ int main()
 
         // execute
         if (execFlag == 1)
-            execArgs(parsedArgs);
+            exec_cmd(parsedArgs);
 
         if (execFlag == 2)
-            execArgsPiped(parsedArgs, parsedArgsPiped);
+            exec_piped_arg(parsedArgs, parsedArgsPiped);
     }
     return 0;
 }
