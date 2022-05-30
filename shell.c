@@ -199,53 +199,61 @@ int cmd_executer(char** parsed_line)
     return 0;
 }
 
-// function for finding pipe
-int parsePipe(char* str, char** strpiped)
+// pipe parser
+int pipe_parser(char* str, char** piped_string)
 {
     int i;
-    for (i = 0; i < 2; i++) {
-        strpiped[i] = strsep(&str, "|");
-        if (strpiped[i] == NULL)
+    for (i = 0; i < 2; i++)
+    {
+        // featured in string.h
+        piped_string[i] = strsep(&str, "|");
+        if (piped_string[i] == NULL)
             break;
     }
 
-    if (strpiped[1] == NULL)
-        return 0; // returns zero if no pipe is found.
-    else {
+    if (piped_string[1] == NULL)
+        return 0;
+    else
+    {
         return 1;
     }
 }
 
-// function for parsing command words
-void parseSpace(char* str, char** parsed)
+// command parser, based on space char
+void global_parser(char* str, char** parsed)
 {
     int i;
 
     for (i = 0; i < MAXLIST; i++) {
+        // featured in string.h
         parsed[i] = strsep(&str, " ");
 
         if (parsed[i] == NULL)
             break;
+        // featured in string.h
         if (strlen(parsed[i]) == 0)
             i--;
     }
 }
 
-int processString(char* str, char** parsed, char** parsedpipe)
+int processString(char* str, char** parsed, char** parsed_pipe)
 {
 
-    char* strpiped[2];
+    char* piped_str[2];
     int piped = 0;
 
-    piped = parsePipe(str, strpiped);
+    piped = pipe_parser(str, piped_str);
 
-    if (piped) {
-        parseSpace(strpiped[0], parsed);
-        parseSpace(strpiped[1], parsedpipe);
+    if (piped)
+    {
+        global_parser(piped_str[0], parsed);
+        global_parser(piped_str[1], parsed_pipe);
 
-    } else {
+    }
 
-        parseSpace(str, parsed);
+    else
+    {
+        global_parser(str, parsed);
     }
 
     if (cmd_executer(parsed))
@@ -256,31 +264,26 @@ int processString(char* str, char** parsed, char** parsedpipe)
 
 int main()
 {
-    char inputString[MAXCOM], *parsedArgs[MAXLIST];
-    char* parsedArgsPiped[MAXLIST];
-    int execFlag = 0;
+    char typed_input[MAXCOM], *parsed_cmd[MAXLIST];
+    char* piped_and_parsed[MAXLIST];
+    int proc = 0;
+    // initiating shell
     shell_fetch();
 
-    while (1) {
-        // print shell line
+    // Yes, it's ugly but you do not have choice
+    while (1)
+    {
         get_cwd();
-        // take input
-        if (input_dump(inputString))
+        if (input_dump(typed_input))
             continue;
-        // process
-        execFlag = processString(inputString,
-        parsedArgs, parsedArgsPiped);
-        // execflag returns zero if there is no command
-        // or it is a builtin command,
-        // 1 if it is a simple command
-        // 2 if it is including a pipe.
+        proc = processString(typed_input,
+        parsed_cmd, piped_and_parsed);
+        
+        if (1 == proc)
+            exec_cmd(parsed_cmd);
 
-        // execute
-        if (execFlag == 1)
-            exec_cmd(parsedArgs);
-
-        if (execFlag == 2)
-            exec_piped_arg(parsedArgs, parsedArgsPiped);
+        if (2 == proc)
+            exec_piped_arg(parsed_cmd, piped_and_parsed);
     }
     return 0;
 }
