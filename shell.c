@@ -270,7 +270,6 @@ int main()
     // initiating shell
     shell_fetch();
 
-    // Yes, it's ugly but you do not have choice
     while (1)
     {
         get_cwd();
