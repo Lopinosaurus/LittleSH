@@ -277,7 +277,7 @@ int main()
             continue;
         proc = processString(typed_input,
         parsed_cmd, piped_and_parsed);
-        
+
         if (1 == proc)
             exec_cmd(parsed_cmd);
 
